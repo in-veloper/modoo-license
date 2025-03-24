@@ -35,6 +35,7 @@ const Dashboard = () => {
                 placeholder="자격증명을 입력하세요"
                 onChangeText={changeSearchText}
                 value={searchText}
+                containerStyle={{ backgroundColor: '#FFF', padding: 0, marginTop: 20 }}
             />
             <View style={styles.cardContainer}>
                 <Card containerStyle={styles.card}>
