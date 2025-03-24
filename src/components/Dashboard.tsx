@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react"
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
-import { Card, Text, ListItem } from '@rneui/themed'
+import { Card, Text, ListItem, SearchBar } from '@rneui/themed'
 
 const dummyData = [
     { id: '1', title: '한국사 능력검정', date: '2025-03-01' },
@@ -9,6 +9,7 @@ const dummyData = [
 ]
 
 const Dashboard = () => {
+    const [searchText, setSearchText] = useState("")
     const swipeRefs = useRef<{ [key: string]: any}>({})
     const [openItemId, setOpenItemId] = useState<string | null>(null)
 
@@ -23,8 +24,18 @@ const Dashboard = () => {
         setOpenItemId(id)
     }
 
+    const changeSearchText = (searchText: string) => {
+        setSearchText(searchText)
+    }
+
     return (
         <View style={styles.container}>
+            <SearchBar 
+                lightTheme 
+                placeholder="자격증명을 입력하세요"
+                onChangeText={changeSearchText}
+                value={searchText}
+            />
             <View style={styles.cardContainer}>
                 <Card containerStyle={styles.card}>
                     <Card.Title>접수 예정 시험</Card.Title>
