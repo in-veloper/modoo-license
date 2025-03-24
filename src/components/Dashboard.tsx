@@ -30,12 +30,13 @@ const Dashboard = () => {
 
     return (
         <View style={styles.container}>
-            <SearchBar 
-                lightTheme 
+            <SearchBar
+                lightTheme={true}
                 placeholder="자격증명을 입력하세요"
                 onChangeText={changeSearchText}
                 value={searchText}
-                containerStyle={{ backgroundColor: '#FFF', padding: 0, marginTop: 20 }}
+                containerStyle={styles.searchBarContainer}
+                inputContainerStyle={{ backgroundColor: '#FFF' }}
             />
             <View style={styles.cardContainer}>
                 <Card containerStyle={styles.card}>
@@ -76,10 +77,18 @@ const Dashboard = () => {
 }
 
 const styles = StyleSheet.create({
+    searchBarContainer: {
+        backgroundColor: '#FFF',
+        padding: 0,
+        marginTop: 20,
+        borderColor: '#CCC',
+        borderWidth: 1,
+        borderRadius: 5,
+    },
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#fff',
+        backgroundColor: '#FFF',
     },
     cardContainer: {
         flexDirection: 'row',
