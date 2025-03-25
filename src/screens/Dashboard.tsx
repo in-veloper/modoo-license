@@ -18,7 +18,6 @@ const Dashboard = () => {
     const [searchText, setSearchText] = useState("")
     const swipeRefs = useRef<{ [key: string]: any}>({})
     const [openItemId, setOpenItemId] = useState<string | null>(null)
-    // const [bookmarkedTitles, setBookmarkedTitles] = useState<string[]>([])
     const [showSearchDropdown, setShowSearchDropdown] = useState(false)
     const bookmarkedTitles = useBookmarkStore((state) => state.bookmarkedTitles)
     const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark)

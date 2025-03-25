@@ -20,12 +20,14 @@ const Bookmarks = () => {
 
     return (
         <SafeAreaView style={styles.safeContainer}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View>
-                    {filtered.length === 0 ? (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                {filtered.length === 0 ? (
+                    <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>북마크된 자격증이 없습니다</Text>
-                    ) : (
-                        filtered.map((item) => (
+                    </View>
+                ) : (
+                    filtered.map((item) => (
+                        <View>
                             <Card
                                 key={item.id}
                                 containerStyle={styles.card}
@@ -45,9 +47,9 @@ const Bookmarks = () => {
                                     <Button title="접수" size='sm' buttonStyle={styles.applyButton} onPress={() => console.log(`${item.title} 접수 클릭`)} />
                                 </View>
                             </Card>
-                        ))
-                    )}
-                </View>
+                        </View>
+                    ))
+                )}
             </ScrollView>
             <View style={styles.adBanner}>
                 <Text style={styles.adText}>배너 광고 영역</Text>
@@ -60,11 +62,19 @@ const styles = StyleSheet.create({
     safeContainer: {
         flex: 1,
         backgroundColor: '#FFF',
+        marginTop: 20
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     emptyText: {
         textAlign: 'center',
         marginTop: 24,
         color: '#888',
+        fontSize: 20,
+        fontWeight: 'bold'
     },
     card: {
         borderRadius: 8,
