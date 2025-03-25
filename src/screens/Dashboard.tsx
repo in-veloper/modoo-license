@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView, TouchableHighlight } from 'react-native'
+import { View, StyleSheet, TouchableOpacity, ScrollView, TouchableHighlight, SafeAreaView } from 'react-native'
 import { Card, Text, ListItem, SearchBar, Button } from '@rneui/themed'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useCertStore } from "../stores/certStore"
+import { useBookmarkStore } from "../stores/bookmarkStore"
 
 const dummyData = [
     { id: '1', title: '한국사 능력검정', date: '2025-03-01' },
@@ -17,8 +18,11 @@ const Dashboard = () => {
     const [searchText, setSearchText] = useState("")
     const swipeRefs = useRef<{ [key: string]: any}>({})
     const [openItemId, setOpenItemId] = useState<string | null>(null)
-    const [bookmarkedTitles, setBookmarkedTitles] = useState<string[]>([])
+    // const [bookmarkedTitles, setBookmarkedTitles] = useState<string[]>([])
     const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+    const bookmarkedTitles = useBookmarkStore((state) => state.bookmarkedTitles)
+    const toggleBookmark = useBookmarkStore((state) => state.toggleBookmark)
+    const loadBookmarks = useBookmarkStore((state) => state.loadBookmarks)
 
     const onPressApply = (item: any) => {
         console.log(`${item.title} 원서접수`)
@@ -26,15 +30,7 @@ const Dashboard = () => {
     
     const onPressBookmark = (item: any) => {
         console.log(`${item.title} 북마크`)
-
-        setBookmarkedTitles(prev => {
-            const updated = prev.includes(item.title)
-                ? prev.filter(title => title !== item.title)
-                : [...prev, item.title]
-
-            saveBookmarks(updated)
-            return updated
-        })
+        toggleBookmark(item.title)
     }
 
     const handleSwipe = (id: string) => {
@@ -47,27 +43,6 @@ const Dashboard = () => {
     const changeSearchText = (searchText: string) => {
         setSearchText(searchText)
         setShowSearchDropdown(searchText.trim().length > 0)
-    }
-
-    const saveBookmarks = async (ids: string[]) => {
-        try {
-            const jsonValue = JSON.stringify(ids)
-            await AsyncStorage.setItem('@bookmarkedCerts', jsonValue)
-        } catch (e) {
-            console.error('Bookmark 저장 실패', e)
-        }
-    }
-
-    const loadBookmarks = async () => {
-        try {
-            const jsonValue = await AsyncStorage.getItem('@bookmarkedCerts')
-            if(jsonValue !== null) {
-                setBookmarkedTitles(JSON.parse(jsonValue))
-                console.log(jsonValue)
-            }
-        } catch (e) {
-            console.error('Bookmark 불러오기 실패', e)
-        }
     }
 
     useEffect(() => {
@@ -83,295 +58,303 @@ const Dashboard = () => {
     const filteredData = dummyData.filter((item) => item.title.toLowerCase().includes(searchText.toLowerCase()))
 
     return (
-        <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.container}>
-                <View style={styles.searchWrapper}>
-                    <SearchBar
-                        lightTheme={true}
-                        placeholder="자격증명을 입력하세요"
-                        onChangeText={changeSearchText}
-                        value={searchText}
-                        containerStyle={styles.searchBarContainer}
-                        inputContainerStyle={styles.searchBarInputContainer}
-                        inputStyle={styles.searchBarInput}
-                    />
-                    {searchText.trim().length > 0 && showSearchDropdown && (
-                        <View style={styles.searchDropdown}>
-                            <ScrollView
-                                nestedScrollEnabled={true}
-                                style={styles.searchScroll}
-                            >
-                                {filteredData.length === 0 ? (
-                                    <Text style={styles.emptySearchText}>일치하는 자격증이 없습니다</Text>
-                                ) : (
-                                    filteredData.map((item: any) => (
-                                        <TouchableHighlight
-                                            key={`search-${item.id}`}
-                                            style={styles.searchItem}
-                                            underlayColor="#F0F0F0"
-                                            onPress={() => onPressSearchItem(item.title)}
-                                        >
-                                            <Text style={styles.searchItemText}>{item.title}</Text>
-                                        </TouchableHighlight>
-                                    ))
-                                )}
-                            </ScrollView>
-                        </View>
-                    )}
-                </View>
-                <View style={styles.cardContainer}>
-                    <Card containerStyle={styles.todayCard}>
-                        <Card.Title>오늘 접수 자격증 시험</Card.Title>
-                        <Card.Divider />
-                        <ScrollView
-                            nestedScrollEnabled={true}
-                            style={styles.cardScrollView}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {dummyData.map((item) => (
-                                <ListItem
-                                    key={item.id}
-                                    style={styles.swipeItem}
-                                    containerStyle={styles.todayListItem}
+        <SafeAreaView style={styles.safeAreaView}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.container}>
+                    <View style={styles.searchWrapper}>
+                        <SearchBar
+                            lightTheme={true}
+                            placeholder="자격증명을 입력하세요"
+                            onChangeText={changeSearchText}
+                            value={searchText}
+                            containerStyle={styles.searchBarContainer}
+                            inputContainerStyle={styles.searchBarInputContainer}
+                            inputStyle={styles.searchBarInput}
+                        />
+                        {searchText.trim().length > 0 && showSearchDropdown && (
+                            <View style={styles.searchDropdown}>
+                                <ScrollView
+                                    nestedScrollEnabled={true}
+                                    style={styles.searchScroll}
                                 >
-                                    <View style={styles.listRow}>
-                                        <ListItem.Content>
-                                            <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
-                                        </ListItem.Content>
-                                        <TouchableOpacity
-                                            style={styles.applyButton}
-                                            onPress={() => onPressApply(item)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.applyButtonText}>접수</Text>
-                                        </TouchableOpacity>
-                                        {/* <Text style={styles.date}>{item.date}</Text> */}
-                                    </View>
-                                </ListItem>
-                            ))}
-                        </ScrollView>
-                    </Card>
-                    <Card containerStyle={styles.tbaCard}>
-                        <Card.Title>이번달 접수 예정 자격증 시험</Card.Title>
-                        <Card.Divider />
-                        <ScrollView
-                            nestedScrollEnabled={true}
-                            style={styles.cardScrollView}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {dummyData.map((item) => (
-                                <ListItem.Swipeable
-                                    key={item.id}
-                                    ref={(ref: any) => (swipeRefs.current[item.id] = ref)}
-                                    onSwipeBegin={() => handleSwipe(item.id)}
-                                    style={styles.swipeItem}
-                                    containerStyle={styles.listItem}
-                                    rightWidth={80}
-                                    minSlideWidth={20}
-                                    leftWidth={80}
-                                    leftContent={() => {
-                                        const isBookmarked = bookmarkedTitles.includes(item.title)
-                                        return (
-                                            <TouchableOpacity
-                                                style={styles.leftSwipeBtn}
-                                                onPress={() => onPressBookmark(item)}
-                                                activeOpacity={0.7}
+                                    {filteredData.length === 0 ? (
+                                        <Text style={styles.emptySearchText}>일치하는 자격증이 없습니다</Text>
+                                    ) : (
+                                        filteredData.map((item: any) => (
+                                            <TouchableHighlight
+                                                key={`search-${item.id}`}
+                                                style={styles.searchItem}
+                                                underlayColor="#F0F0F0"
+                                                onPress={() => onPressSearchItem(item.title)}
                                             >
-                                                <AntDesign name={isBookmarked ? "star" : "staro"} size={20} color="#FFD700"/>
-                                            </TouchableOpacity>
-                                        )
-                                    }}
-                                    rightContent={() => (
-                                        <TouchableOpacity 
-                                            style={styles.rightSwipeBtn}
-                                            onPress={() => onPressApply(item)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.swipeText}>접수</Text>
-                                        </TouchableOpacity>
+                                                <Text style={styles.searchItemText}>{item.title}</Text>
+                                            </TouchableHighlight>
+                                        ))
                                     )}
-                                >
-                                    <View style={styles.listRow}>
-                                        <ListItem.Content>
-                                            <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
-                                        </ListItem.Content>
-                                        <Text style={styles.date}>{item.date}</Text>
-                                    </View>
-                                </ListItem.Swipeable>
-                            ))}
-                        </ScrollView>
-                    </Card>
-                    <Card containerStyle={styles.tbaCard}>
-                        <Card.Title>다음달 접수 예정 자격증 시험</Card.Title>
-                        <Card.Divider />
-                        <ScrollView
-                            nestedScrollEnabled={true}
-                            style={styles.cardScrollView}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {dummyData.map((item) => (
-                                <ListItem.Swipeable
-                                    key={item.id}
-                                    ref={(ref: any) => (swipeRefs.current[item.id] = ref)}
-                                    onSwipeBegin={() => handleSwipe(item.id)}
-                                    style={styles.swipeItem}
-                                    containerStyle={styles.listItem}
-                                    rightWidth={80}
-                                    minSlideWidth={20}
-                                    leftWidth={80}
-                                    leftContent={() => {
-                                        const isBookmarked = bookmarkedTitles.includes(item.title)
-                                        return (
-                                            <TouchableOpacity
-                                                style={styles.leftSwipeBtn}
-                                                onPress={() => onPressBookmark(item)}
-                                                activeOpacity={0.7}
-                                            >
-                                                <AntDesign name={isBookmarked ? "star" : "staro"} size={20} color="#FFD700"/>
-                                            </TouchableOpacity>
-                                        )
-                                    }}
-                                    rightContent={() => (
-                                        <TouchableOpacity 
-                                            style={styles.rightSwipeBtn}
-                                            onPress={() => onPressApply(item)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.swipeText}>접수</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                >
-                                    <View style={styles.listRow}>
-                                        <ListItem.Content>
-                                            <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
-                                        </ListItem.Content>
-                                        <Text style={styles.date}>{item.date}</Text>
-                                    </View>
-                                </ListItem.Swipeable>
-                            ))}
-                        </ScrollView>
-                    </Card>
-                    <Card containerStyle={styles.tbaCard}>
-                        <Card.Title>올해 접수 예정 자격증 시험</Card.Title>
-                        <Card.Divider />
-                        <ScrollView
-                            nestedScrollEnabled={true}
-                            style={styles.cardScrollView}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {dummyData.map((item) => (
-                                <ListItem.Swipeable
-                                    key={item.id}
-                                    ref={(ref: any) => (swipeRefs.current[item.id] = ref)}
-                                    onSwipeBegin={() => handleSwipe(item.id)}
-                                    style={styles.swipeItem}
-                                    containerStyle={styles.listItem}
-                                    rightWidth={80}
-                                    minSlideWidth={20}
-                                    leftWidth={80}
-                                    leftContent={() => {
-                                        const isBookmarked = bookmarkedTitles.includes(item.title)
-                                        return (
-                                            <TouchableOpacity
-                                                style={styles.leftSwipeBtn}
-                                                onPress={() => onPressBookmark(item)}
-                                                activeOpacity={0.7}
-                                            >
-                                                <AntDesign name={isBookmarked ? "star" : "staro"} size={20} color="#FFD700"/>
-                                            </TouchableOpacity>
-                                        )
-                                    }}
-                                    rightContent={() => (
-                                        <TouchableOpacity 
-                                            style={styles.rightSwipeBtn}
-                                            onPress={() => onPressApply(item)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.swipeText}>접수</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                >
-                                    <View style={styles.listRow}>
-                                        <ListItem.Content>
-                                            <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
-                                        </ListItem.Content>
-                                        <Text style={styles.date}>{item.date}</Text>
-                                    </View>
-                                </ListItem.Swipeable>
-                            ))}
-                        </ScrollView>
-                    </Card>
-                    <Card containerStyle={styles.bookmarkCard}>
-                        <Card.Title>북마크한 자격증 시험</Card.Title>
-                        <Card.Divider />
-                        {bookmarkedTitles.length === 0 ? (
-                            <View style={styles.emptyBookmarkContainer}>
-                                <Text style={styles.emptyBookmarkText}>북마크한 시험 내역이 없습니다</Text>
-
+                                </ScrollView>
                             </View>
-                        ) : (
+                        )}
+                    </View>
+                    <View style={styles.cardContainer}>
+                        <Card containerStyle={styles.todayCard}>
+                            <Card.Title>오늘 접수 자격증 시험</Card.Title>
+                            <Card.Divider />
                             <ScrollView
                                 nestedScrollEnabled={true}
                                 style={styles.cardScrollView}
                                 showsVerticalScrollIndicator={false}
                             >
-                                {dummyData
-                                    .filter((item) => bookmarkedTitles.includes(item.title))
-                                    .map((item) => (
-                                        <ListItem.Swipeable
-                                            key={`bm-${item.id}`}
-                                            ref={(ref: any) => (swipeRefs.current[`bm-${item.id}`] = ref)}
-                                            onSwipeBegin={() => handleSwipe(`bm-${item.id}`)}
-                                            style={styles.swipeItem}
-                                            containerStyle={styles.listItem}
-                                            rightWidth={80}
-                                            minSlideWidth={20}
-                                            leftWidth={80}
-                                            leftContent={() => {
-                                                const isBookmarked = bookmarkedTitles.includes(item.title)
-                                                return (
-                                                    <TouchableOpacity
-                                                        style={styles.leftSwipeBtn}
-                                                        onPress={() => onPressBookmark(item)}
-                                                        activeOpacity={0.7}
-                                                    >
-                                                        <AntDesign 
-                                                            name={isBookmarked ? "star" : "staro"}
-                                                            size={20}
-                                                            color="#FFD700"
-                                                        />
-                                                    </TouchableOpacity>
-                                                )
-                                            }}
-                                            rightContent={() => (
+                                {dummyData.map((item) => (
+                                    <ListItem
+                                        key={item.id}
+                                        style={styles.swipeItem}
+                                        containerStyle={styles.todayListItem}
+                                    >
+                                        <View style={styles.listRow}>
+                                            <ListItem.Content>
+                                                <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
+                                            </ListItem.Content>
+                                            <TouchableOpacity
+                                                style={styles.applyButton}
+                                                onPress={() => onPressApply(item)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.applyButtonText}>접수</Text>
+                                            </TouchableOpacity>
+                                            {/* <Text style={styles.date}>{item.date}</Text> */}
+                                        </View>
+                                    </ListItem>
+                                ))}
+                            </ScrollView>
+                        </Card>
+                        <Card containerStyle={styles.tbaCard}>
+                            <Card.Title>이번달 접수 예정 자격증 시험</Card.Title>
+                            <Card.Divider />
+                            <ScrollView
+                                nestedScrollEnabled={true}
+                                style={styles.cardScrollView}
+                                showsVerticalScrollIndicator={false}
+                            >
+                                {dummyData.map((item) => (
+                                    <ListItem.Swipeable
+                                        key={item.id}
+                                        ref={(ref: any) => (swipeRefs.current[item.id] = ref)}
+                                        onSwipeBegin={() => handleSwipe(item.id)}
+                                        style={styles.swipeItem}
+                                        containerStyle={styles.listItem}
+                                        rightWidth={80}
+                                        minSlideWidth={20}
+                                        leftWidth={80}
+                                        leftContent={() => {
+                                            const isBookmarked = bookmarkedTitles.includes(item.title)
+                                            return (
                                                 <TouchableOpacity
-                                                    style={styles.rightSwipeBtn}
-                                                    onPress={() => onPressApply(item)}
+                                                    style={styles.leftSwipeBtn}
+                                                    onPress={() => onPressBookmark(item)}
                                                     activeOpacity={0.7}
                                                 >
-                                                    <Text style={styles.swipeText}>접수</Text>
+                                                    <AntDesign name={isBookmarked ? "star" : "staro"} size={20} color="#FFD700"/>
                                                 </TouchableOpacity>
-                                            )}
-                                        >
-                                            <View style={styles.listRow}>
-                                                <ListItem.Content>
-                                                    <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
-                                                </ListItem.Content>
-                                                <Text style={styles.date}>{item.date}</Text>
-                                            </View>
-                                        </ListItem.Swipeable>
-                                    ))
-                                }
+                                            )
+                                        }}
+                                        rightContent={() => (
+                                            <TouchableOpacity 
+                                                style={styles.rightSwipeBtn}
+                                                onPress={() => onPressApply(item)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.swipeText}>접수</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    >
+                                        <View style={styles.listRow}>
+                                            <ListItem.Content>
+                                                <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
+                                            </ListItem.Content>
+                                            <Text style={styles.date}>{item.date}</Text>
+                                        </View>
+                                    </ListItem.Swipeable>
+                                ))}
                             </ScrollView>
-                        )}
-                    </Card>
+                        </Card>
+                        <Card containerStyle={styles.tbaCard}>
+                            <Card.Title>다음달 접수 예정 자격증 시험</Card.Title>
+                            <Card.Divider />
+                            <ScrollView
+                                nestedScrollEnabled={true}
+                                style={styles.cardScrollView}
+                                showsVerticalScrollIndicator={false}
+                            >
+                                {dummyData.map((item) => (
+                                    <ListItem.Swipeable
+                                        key={item.id}
+                                        ref={(ref: any) => (swipeRefs.current[item.id] = ref)}
+                                        onSwipeBegin={() => handleSwipe(item.id)}
+                                        style={styles.swipeItem}
+                                        containerStyle={styles.listItem}
+                                        rightWidth={80}
+                                        minSlideWidth={20}
+                                        leftWidth={80}
+                                        leftContent={() => {
+                                            const isBookmarked = bookmarkedTitles.includes(item.title)
+                                            return (
+                                                <TouchableOpacity
+                                                    style={styles.leftSwipeBtn}
+                                                    onPress={() => onPressBookmark(item)}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <AntDesign name={isBookmarked ? "star" : "staro"} size={20} color="#FFD700"/>
+                                                </TouchableOpacity>
+                                            )
+                                        }}
+                                        rightContent={() => (
+                                            <TouchableOpacity 
+                                                style={styles.rightSwipeBtn}
+                                                onPress={() => onPressApply(item)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.swipeText}>접수</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    >
+                                        <View style={styles.listRow}>
+                                            <ListItem.Content>
+                                                <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
+                                            </ListItem.Content>
+                                            <Text style={styles.date}>{item.date}</Text>
+                                        </View>
+                                    </ListItem.Swipeable>
+                                ))}
+                            </ScrollView>
+                        </Card>
+                        <Card containerStyle={styles.tbaCard}>
+                            <Card.Title>올해 접수 예정 자격증 시험</Card.Title>
+                            <Card.Divider />
+                            <ScrollView
+                                nestedScrollEnabled={true}
+                                style={styles.cardScrollView}
+                                showsVerticalScrollIndicator={false}
+                            >
+                                {dummyData.map((item) => (
+                                    <ListItem.Swipeable
+                                        key={item.id}
+                                        ref={(ref: any) => (swipeRefs.current[item.id] = ref)}
+                                        onSwipeBegin={() => handleSwipe(item.id)}
+                                        style={styles.swipeItem}
+                                        containerStyle={styles.listItem}
+                                        rightWidth={80}
+                                        minSlideWidth={20}
+                                        leftWidth={80}
+                                        leftContent={() => {
+                                            const isBookmarked = bookmarkedTitles.includes(item.title)
+                                            return (
+                                                <TouchableOpacity
+                                                    style={styles.leftSwipeBtn}
+                                                    onPress={() => onPressBookmark(item)}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    <AntDesign name={isBookmarked ? "star" : "staro"} size={20} color="#FFD700"/>
+                                                </TouchableOpacity>
+                                            )
+                                        }}
+                                        rightContent={() => (
+                                            <TouchableOpacity 
+                                                style={styles.rightSwipeBtn}
+                                                onPress={() => onPressApply(item)}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.swipeText}>접수</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    >
+                                        <View style={styles.listRow}>
+                                            <ListItem.Content>
+                                                <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
+                                            </ListItem.Content>
+                                            <Text style={styles.date}>{item.date}</Text>
+                                        </View>
+                                    </ListItem.Swipeable>
+                                ))}
+                            </ScrollView>
+                        </Card>
+                        <Card containerStyle={styles.bookmarkCard}>
+                            <Card.Title>북마크한 자격증 시험</Card.Title>
+                            <Card.Divider />
+                            {bookmarkedTitles.length === 0 ? (
+                                <View style={styles.emptyBookmarkContainer}>
+                                    <Text style={styles.emptyBookmarkText}>북마크한 시험 내역이 없습니다</Text>
+
+                                </View>
+                            ) : (
+                                <ScrollView
+                                    nestedScrollEnabled={true}
+                                    style={styles.cardScrollView}
+                                    showsVerticalScrollIndicator={false}
+                                >
+                                    {dummyData
+                                        .filter((item) => bookmarkedTitles.includes(item.title))
+                                        .map((item) => (
+                                            <ListItem.Swipeable
+                                                key={`bm-${item.id}`}
+                                                ref={(ref: any) => (swipeRefs.current[`bm-${item.id}`] = ref)}
+                                                onSwipeBegin={() => handleSwipe(`bm-${item.id}`)}
+                                                style={styles.swipeItem}
+                                                containerStyle={styles.listItem}
+                                                rightWidth={80}
+                                                minSlideWidth={20}
+                                                leftWidth={80}
+                                                leftContent={() => {
+                                                    const isBookmarked = bookmarkedTitles.includes(item.title)
+                                                    return (
+                                                        <TouchableOpacity
+                                                            style={styles.leftSwipeBtn}
+                                                            onPress={() => onPressBookmark(item)}
+                                                            activeOpacity={0.7}
+                                                        >
+                                                            <AntDesign 
+                                                                name={isBookmarked ? "star" : "staro"}
+                                                                size={20}
+                                                                color="#FFD700"
+                                                            />
+                                                        </TouchableOpacity>
+                                                    )
+                                                }}
+                                                rightContent={() => (
+                                                    <TouchableOpacity
+                                                        style={styles.rightSwipeBtn}
+                                                        onPress={() => onPressApply(item)}
+                                                        activeOpacity={0.7}
+                                                    >
+                                                        <Text style={styles.swipeText}>접수</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            >
+                                                <View style={styles.listRow}>
+                                                    <ListItem.Content>
+                                                        <ListItem.Title style={styles.title}>{item.title}</ListItem.Title>
+                                                    </ListItem.Content>
+                                                    <Text style={styles.date}>{item.date}</Text>
+                                                </View>
+                                            </ListItem.Swipeable>
+                                        ))
+                                    }
+                                </ScrollView>
+                            )}
+                        </Card>
+                    </View>
                 </View>
+            </ScrollView>
+            <View style={styles.adBanner}>
+                <Text style={styles.adText}>배너 광고 영역</Text>
             </View>
-        </ScrollView>
+        </SafeAreaView>
     )
 }
 
 const styles = StyleSheet.create({
+    safeAreaView: {
+        flex: 1
+    },
     searchBarContainer: {
         backgroundColor: '#FFF',
         padding: 0,
@@ -532,6 +515,16 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 13,
         fontWeight: 'bold',
+    },
+    adBanner: {
+        height: 60,
+        backgroundColor: '#EEE',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    adText: {
+        fontSize: 14,
+        color: '#777',
     },
 })
 
